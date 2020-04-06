@@ -4,6 +4,8 @@ const exp = require('express');
 
 const cors = require('cors');
 
+const superagent = require('superagent');
+
 require('dotenv').config();
 
 const PORT = process.env.PORT || 3000;
@@ -14,10 +16,15 @@ server.use(cors());
 
 
 server.get('/location', (req, res) => {
-    const geoD = require('./data/geo.json');
     const place = req.query.city;
-    const myData = new locationCons(place, geoD);
-    res.send(myData);
+    const key=process.env.GEOCODE_API_KEY;
+    const url = `https://eu1.locationiq.com/v1/search.php?key=${key}&q=${place}&format=json`;
+    superagent.get(url)
+    .then(geoD =>{
+        const myData = new locationCons(place, geoD.body);
+        res.send(myData);
+    })
+    
 
 })
 
@@ -30,32 +37,78 @@ function locationCons(city, geoD) {
 
 
 server.get('/weather', (req, res) => {
-    const weatherFile = require('./data/weather.json');
+    const place = req.query.search_query;
     let arr=[];
-    weatherFile.data.forEach((val, i) => {
+    const key=process.env.WEATHER_KEY;
+    const url = `https://api.weatherbit.io/v2.0/forecast/daily?city=${place}&key=${key}`;
+    superagent.get(url)
+    .then(weatherFile =>{
+        weatherFile.body.data.map((val, i) => {
         let description = val.weather.description;
         let date = val.valid_date;
         let m = new weatherData(description, date);
         arr.push(m);
-        handling();
-
     })
     res.send(arr);
+    })
+    
     
 
 })
 
 function weatherData(description, date) {
+
     this.forecast = description;
     this.time=date;
 
 }
+
+
+server.get('/trails', (req, res) => {
+    
+    let arr=[];
+    const key=process.env.TRAIL_API_KEY;
+    const lat = req.query.latitude;
+    console.log('hhhhhhhhhhhhhhhhhhhhhhhhh',lat);
+    const lon = req.query.longitude;
+    const url = `https://www.hikingproject.com/data/get-trails?lat=${lat}&lon=${lon}&maxDistance=200&key=${key}`;
+    superagent.get(url)
+    .then(trailsData =>{
+        trailsData.body.trails.map(val =>{
+            let tr = new trailsObject(val);
+            arr.push(tr);
+        })
+        res.send(arr);
+    })
+
+});
+
+function trailsObject(val){
+    this.name= val.name;
+    this.location= val.location;
+    this.length = val.length;
+    this.stars = val.stars;
+    this.starVotes= val.starVotes;
+    this.summary= val.summary;
+    this.trail_url= val.url;
+    this.conditions= val.conditionDetails;
+    this.condition_date= val.conditionDate.substring(0,11);
+    this.condition_time = val.conditionDate.substring(11);
+}
+
+
+
+
+
+
+
+
+
 server.listen(PORT, () => {
     console.log(PORT);
 });
 
-function handling(){
+
 server.use((req,res)=>{
     res.status(500).send('Sorry, something went wrong')
 });
-}
