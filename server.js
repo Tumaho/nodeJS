@@ -124,6 +124,64 @@ function trailsObject(val) {
 }
 
 
+server.get('/movies', (req, res) => {
+
+    let arr = [];
+    const key = process.env.MOVIE_API_KEY;
+    const movie = req.query.search_query;
+    const url = `https://api.themoviedb.org/3/search/movie?api_key=${key}&query=${movie}`;
+    superagent.get(url)
+        .then(moviesData => {
+            
+            moviesData.body.results.map(val => {
+                
+                let x = new moviesObject(val);
+                arr.push(x);
+            })
+            res.send(arr);
+        })
+
+});
+
+function moviesObject(val) {
+    this.title = val.title;
+    
+    this.overview = val.overview;
+    this.average_votes = val.vote_average;
+    this.total_votes = val.vote_count;
+    this.image_url = val.poster_path;
+    this.popularity = val.popularity;
+    this.released_on = val.release_date;
+    
+}
+
+server.get('/yelp', (req, res) => {
+
+    let arr = [];
+    const city = req.query.search_query;
+    const url = `https://api.yelp.com/v3/businesses/search?location=${city}`;
+    superagent.get(url)
+        .set({ 'Authorization':`Bearer ${process.env.YELP_API_KEY}`})
+        .then(yelpData => {
+            
+            yelpData.body.businesses.map(val => {
+                
+                let x = new yelpObject(val);
+                arr.push(x);
+            })
+            res.send(arr);
+        })
+
+});
+
+function yelpObject(val) {
+    this.title = val.name;
+    this.image_url = val.image_url;
+    this.price = val.price;
+    this.rating = val.rating;
+    this.url = val.url;
+    
+}
 
 
 
